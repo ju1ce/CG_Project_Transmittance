@@ -61,14 +61,10 @@ Shader "Project/MonteCarloShader"           //calculate emission and absorptionw
             //random function, thanks to https://www.ronja-tutorials.com/post/024-white-noise/
             // 
             //get a scalar random value from a 3d value
-            float rand(float3 value, float seed) {
-                //make value smaller to avoid artefacts
-                float3 smallValue = sin(value);
-                //get scalar value from 3d vector
-                float random = dot(smallValue, float3(12.9898, 78.233, 37.719));
-                //make value more random by making it bigger and then taking the factional part
-                random = frac(sin(random*12.23) * 1438.5453 * (seed+1.754));
-                return random;
+            float rand(float3 p3, float seed) {
+                p3 = frac(p3 * 1031);
+                p3 += dot(p3, p3.zyx + 31.32);
+                return frac((p3.x + p3.y) * p3.z * seed);
             }
 
             float4 sampleTexture(float3 pos)
@@ -77,7 +73,7 @@ Shader "Project/MonteCarloShader"           //calculate emission and absorptionw
                 {
                     return float4(0, 0, 0, 0);
                 }
-                float4 sampledColor = tex3D(_Volume, pos + float3(0.5f, 0.5f, 0.5f));
+                float4 sampledColor = tex3D(_Volume, pos + float3(0.5f, 0.5f, 0.5f), 0, 0);
                 return sampledColor;
             }
 
@@ -110,30 +106,39 @@ Shader "Project/MonteCarloShader"           //calculate emission and absorptionw
                 color = float4(0, 0, 0, 0);
 
                 float surf_rad = 0.0;               //variable to calculate reduction in surface radiance
-                float3 emit_rad = float3(0, 0, 0);  //variable to store emitted radiance
+                //float3 emit_rad = float3(0, 0, 0);  //variable to store emitted radiance
                 //float3 scatt_rad = float3(0, 0, 0); //variable to store in-scattered radiance
+
+
+                float hit_steps = 0;
 
                 for (int i = 0; i < _MaxSteps; i++)
                 {
                     float3 cur_pos = pos;
-                    for(int j = 0; j < 10; j++)
+                    float3 cur_rd = rd;
+                    for(int j = 0; j < 100; j++)
                     {
 
-                        float random = -log(rand(cur_pos, sin(i+j))) * _Density;
+                        float random = -log(1-rand(cur_pos, sin(i+j))) * _Density;
                     
                         float3 sample_pos = cur_pos + rd * random;
 
-                    //color = float4(sample_pos.x, sample_pos.y, sample_pos.z))
+                        //color = float4(sample_pos.x, sample_pos.y, sample_pos.z))
 
                         if (max(abs(sample_pos.x), max(abs(sample_pos.y), abs(sample_pos.z))) < 0.5f)
                         {
-                            float color_sample = sampleTexture(sample_pos).a;
+                            float4 color_sample = sampleTexture(sample_pos);
                             //float color_sample = 0.5-length(sample_pos); 
 
+                            //if (color_sample > 0)
+                            //    color_sample = 1;
+
                             float random_null = rand(sample_pos, cos(i + j));
-                            if (color_sample > random_null)
+                            if (color_sample.a > random_null)
                             {
-                                surf_rad += color_sample;
+                                hit_steps += 1.0;
+                                surf_rad += color_sample.a;
+                                //emit_rad += float3(1,1,1) * color_sample.a;
                                 break;
                             }
                             else
@@ -145,8 +150,9 @@ Shader "Project/MonteCarloShader"           //calculate emission and absorptionw
                     }
                 }
 
-                color.rgb = _VolumeColor;
-                color.a = surf_rad / _MaxSteps;
+                color = _VolumeColor;
+                //color.rgb = emit_rad / _MaxSteps;
+                color.a = hit_steps / _MaxSteps;
 
                 //apply the transmittance to the alpha channel
                 //color = _Color;

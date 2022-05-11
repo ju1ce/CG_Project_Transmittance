@@ -100,7 +100,7 @@ Shader "Project/RaymarchAbsorptionShader"           //calculate absorption throu
                 {
                     return float4(0,0,0,0);
                 }
-                float4 sampledColor = tex3D(_Volume, pos + float3(0.5f, 0.5f, 0.5f));
+                float4 sampledColor = tex3D(_Volume, pos + float3(0.5f, 0.5f, 0.5f),0 ,0);
                 return sampledColor;
             }
 
@@ -154,7 +154,7 @@ Shader "Project/RaymarchAbsorptionShader"           //calculate absorption throu
                     pos = pos + rd * _Stepsize;
                     float4 color_sample = sampleTexture2(pos);
                     
-                    color.rgb += color_sample.rgb * (exp(-dist * _Density)) * color_sample.a;
+                    //color.rgb += color_sample.rgb * (exp(-dist * _Density)) * color_sample.a;
                     total_weight += (exp(-dist * _Density)) * color_sample.a;
 
                     dist += color_sample.a * _Stepsize;
@@ -162,9 +162,9 @@ Shader "Project/RaymarchAbsorptionShader"           //calculate absorption throu
                 }
 
                 //apply the transmittance to the alpha channel
-                //color /= exp(-dist * _Density);
-                color *= _Color;
-                color /= total_weight;
+                //color.rgb = float3(1,1,1);
+                color = _Color;
+                //color /= total_weight;
                 color.a = 1 - exp(-dist * _Density);
             }
             ENDCG

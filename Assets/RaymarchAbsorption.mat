@@ -56,20 +56,20 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _Volume:
-        m_Texture: {fileID: 11700000, guid: 2e37e8bfbc37b664486c26f47265ed4a, type: 3}
+        m_Texture: {fileID: 11700000, guid: 68609a0a84ee9474c927bff95dbca8cd, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Floats:
     - _Alpha: 1
     - _BumpScale: 1
     - _Cutoff: 0.5
-    - _Density: 61.4
+    - _Density: 10
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
     - _GlossMapScale: 1
     - _Glossiness: 0.5
     - _GlossyReflections: 1
-    - _MaxSteps: 1000
+    - _MaxSteps: 100
     - _Metallic: 0
     - _Mode: 0
     - _OcclusionStrength: 1
@@ -78,7 +78,7 @@ Material:
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _StepSize: 0.01
-    - _Stepsize: 0.001
+    - _Stepsize: 0.1
     - _UVSec: 0
     - _ZWrite: 1
     m_Colors:
