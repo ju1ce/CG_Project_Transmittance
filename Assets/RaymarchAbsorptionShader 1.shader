@@ -67,11 +67,11 @@ Shader "Project/RaymarchAbsorptionShader"           //calculate absorption throu
                 return random;
             }
 
-            float hash13(float3 p3)
+            float hash13(float3 p3, float seed)
             {
                 p3 = frac(p3 * 1031);
                 p3 += dot(p3, p3.zyx + 31.32);
-                return frac((p3.x + p3.y) * p3.z);
+                return frac((p3.x + p3.y) * p3.z * seed);
             }
 
             float sphere(float3 pos, float r)
@@ -119,11 +119,14 @@ Shader "Project/RaymarchAbsorptionShader"           //calculate absorption throu
                 float3 pos = i.hitPos;
                 float3 rd = normalize(pos - i.ro);
 
+                if (unity_OrthoParams.w)                                                             //if camera is orthographic, recalculate ray direction
+                    rd = mul(unity_WorldToObject, float4(unity_CameraToWorld._m02_m12_m22, 0));
+
                 //pos = i.ro + rd*0.1;
 
                 float dist = 0;
                 
-                float rnd = hash13(pos);
+                float rnd = hash13(pos, _Time.a);
                 //float newrnd = 0.5;
                 if (isnan(rnd))
                 {

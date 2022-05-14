@@ -98,6 +98,9 @@ Shader "Project/MonteCarloShader"           //calculate emission and absorptionw
                 float3 pos = i.hitPos;
                 float3 rd = normalize(pos - i.ro);
 
+                if (unity_OrthoParams.w)                                                             //if camera is orthographic, recalculate ray direction
+                    rd = mul(unity_WorldToObject, float4(unity_CameraToWorld._m02_m12_m22, 0));
+
                 //pos = i.ro + rd*0.1;
 
                 //add some randomness to prevent aliasing
@@ -119,7 +122,7 @@ Shader "Project/MonteCarloShader"           //calculate emission and absorptionw
                     for(int j = 0; j < 100; j++)
                     {
 
-                        float random = -log(1-rand(cur_pos, sin(i+j))) * _Density;
+                        float random = -log(1-rand(cur_pos, sin(i+j+_Time.a))) * _Density;
                     
                         float3 sample_pos = cur_pos + rd * random;
 
@@ -133,7 +136,7 @@ Shader "Project/MonteCarloShader"           //calculate emission and absorptionw
                             //if (color_sample > 0)
                             //    color_sample = 1;
 
-                            float random_null = rand(sample_pos, cos(i + j));
+                            float random_null = rand(sample_pos, cos(i + j + _Time.a));
                             if (color_sample.a > random_null)
                             {
                                 hit_steps += 1.0;

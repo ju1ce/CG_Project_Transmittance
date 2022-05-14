@@ -95,6 +95,12 @@ Shader "Project/RatioTrackingShader"           //calculate emission and absorpti
                 float3 pos = i.hitPos;
                 float3 rd = normalize(pos - i.ro);
 
+                //float3 forward = UnityViewToObject(float3(1, 0, 0));
+                if(unity_OrthoParams.w)                                                             //if camera is orthographic, recalculate ray direction
+                    rd = mul(unity_WorldToObject, float4(unity_CameraToWorld._m02_m12_m22, 0));
+
+                //rd = -rd;
+
                 //pos = i.ro + rd*0.1;
 
                 //add some randomness to prevent aliasing
@@ -118,7 +124,7 @@ Shader "Project/RatioTrackingShader"           //calculate emission and absorpti
                     for(int j = 0; j < 1000; j++)
                     {
 
-                        float random = -log(1-rand(cur_pos, sin(i+j))) * _Density;
+                        float random = -log(1-rand(cur_pos, sin(i+j + _Time.a))) * _Density;
                     
                         float3 sample_pos = cur_pos + rd * random;
 
