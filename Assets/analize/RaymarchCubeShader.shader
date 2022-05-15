@@ -1,4 +1,4 @@
-Shader "Project/RaymarchAbsorptionShader"           //calculate absorption through a medium using the raymarching method
+Shader "Project/RaymarchCube"           //calculate absorption through a medium using the raymarching method
 {
     Properties
     {
@@ -54,8 +54,6 @@ Shader "Project/RaymarchAbsorptionShader"           //calculate absorption throu
                 return o;
             }
 
-            //random function, thanks to https://www.ronja-tutorials.com/post/024-white-noise/
-            // 
             //get a scalar random value from a 3d value
             float rand(float3 value) {
                 //make value smaller to avoid artefacts
@@ -74,42 +72,10 @@ Shader "Project/RaymarchAbsorptionShader"           //calculate absorption throu
                 return frac((p3.x + p3.y) * p3.z * seed);
             }
 
-            float sphere(float3 pos, float r)
+            float getDensity(float3 pos)
             {
-                return length(pos) - r;
-            }
-
-            float cube(float3 pos, float x, float y, float z)
-            {
-                return max(abs(pos.x) - x, max(abs(pos.y) - y, abs(pos.z) - z));
-            }
-
-            float sampleTexture(float3 pos)
-            {
-                if (max(abs(pos.x), max(abs(pos.y), abs(pos.z))) >= 0.5f)        //check bounds of cube
-                {
-                    return 0;
-                }
-                float4 sampledColor = tex3D(_Volume, pos + float3(0.5f, 0.5f, 0.5f));
-                return -sampledColor.a + 0.4;
-            }
-
-            float4 sampleTexture2(float3 pos)
-            {
-                if (max(abs(pos.x), max(abs(pos.y), abs(pos.z))) >= 0.5f)        //check bounds of cube
-                {
-                    return float4(0,0,0,0);
-                }
-                float4 sampledColor = tex3D(_Volume, pos + float3(0.5f, 0.5f, 0.5f),0 ,0);
-                return sampledColor;
-            }
-
-            //returns whether point is inside medium
-            float medium(float3 pos)
-            {
-                if (sampleTexture(pos) < 0.0)
-                    return 1.0;
-                return 0.0;
+                //return density for a cube, where transmittance falls linearly from 1 to 0 on x axis
+                return -log(pos.x + 0.5);
             }
 
             void frag(v2f i, out float4 color : SV_Target)
@@ -127,48 +93,39 @@ Shader "Project/RaymarchAbsorptionShader"           //calculate absorption throu
                 float dist = 0;
                 
                 float rnd = hash13(pos, _Time.a);
-                //float newrnd = 0.5;
-                if (isnan(rnd))
-                {
-                    rnd = 0;
-                }
-                /*
-                for(int j = 0; j < 255;j++)
-                {
-                    if (j / 255.0 > rnd)
-                    {
-                        newrnd = float(j) / 255.0;
-                        break;
-                    }
-                }
-                */
-                //rnd = newrnd;
 
                 color = float4(0, 0, 0, 1);
                 //return;
 
                 //add some randomness to prevent aliasing
-                //pos = pos - rd *(rnd+0.1) * _Stepsize;// hash13(pos)* (1 + sin(_Time.z));
+                pos = pos - rd *(rnd+0.1) * _Stepsize;// hash13(pos)* (1 + sin(_Time.z));
 
                 float total_weight = 0;
 
                 for (int i = 0; i < _MaxSteps; i++)
                 {
-                    pos = pos + rd * _Stepsize;
-                    float4 color_sample = sampleTexture2(pos);
-                    
-                    //color.rgb += color_sample.rgb * (exp(-dist * _Density)) * color_sample.a;
-                    total_weight += (exp(-dist * _Density)) * color_sample.a;
 
-                    dist += color_sample.a * _Stepsize;
+                    pos = pos + rd * _Stepsize;
+
+                    if (max(abs(pos.x), max(abs(pos.y), abs(pos.z))) < 0.5f)
+                    {
+
+                        float color_sample = getDensity(pos);
+
+                        //color_sample = 0.5;
+
+                        //color.rgb += color_sample.rgb * (exp(-dist * _Density)) * color_sample.a;
+                        //total_weight += (exp(-dist * _Density)) * color_sample;
+
+                        dist += color_sample * _Stepsize;
+                    }
 
                 }
 
-                //apply the transmittance to the alpha channel
-                //color.rgb = float3(1,1,1);
-                color = _Color;
-                //color /= total_weight;
-                color.a = 1 - exp(-dist * _Density);
+                //apply the transmittance to the color
+
+                color = float4(0, 0, 0, 1);
+                color.rgb = exp(-dist * _Density);
             }
             ENDCG
         }

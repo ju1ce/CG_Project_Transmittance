@@ -1,4 +1,4 @@
-Shader "Project/RatioTrackingShader"           //calculate emission and absorptionwith monte carlo in homogeneus cube
+Shader "Project/RatioTrackingShader"        
 {
     Properties
     {
@@ -6,7 +6,7 @@ Shader "Project/RatioTrackingShader"           //calculate emission and absorpti
         _VolumeColor("VolumeColor", Color) = (1,1,1,1)
         _Volume("Volume", 3D) = "white" {}
         _Density("Density", float) = 1.0
-        _Stepsize("StepSize", float) = 0.1
+        _Majorant("Majorant", float) = 1.0
         _MaxSteps("MaxSteps", int) = 100
         //_light_pow("LightPower", float) = 0.1
     }
@@ -15,7 +15,7 @@ Shader "Project/RatioTrackingShader"           //calculate emission and absorpti
         Tags { "RenderType" = "Transparent" "Queue" = "Transparent" }
         LOD 100
         Blend SrcAlpha OneMinusSrcAlpha
-        Cull Off
+        Cull Back
 
         Pass
         {
@@ -60,10 +60,17 @@ Shader "Project/RatioTrackingShader"           //calculate emission and absorpti
 
 
             //get a scalar random value from a 3d value
-            float rand(float3 p3, float seed) {
-                p3 = frac(p3 * 1031);
-                p3 += dot(p3, p3.zyx + 31.32);
-                return frac((p3.x + p3.y) * p3.z * seed);
+            float randSin(float3 value, float3 dotDir = float3(12.9898, 78.233, 37.719)) {
+
+                dotDir += float3(1.9898, 7.233, 3.719);
+
+                //make value smaller to avoid artefacts
+                float3 smallValue = sin(value);
+                //get scalar value from 3d vector
+                float random = dot(smallValue, dotDir);
+                //make value more random by making it bigger and then taking the factional part
+                random = frac(sin(random) * 1438.5453);
+                return random;
             }
 
             float4 sampleTexture(float3 pos)
@@ -76,44 +83,37 @@ Shader "Project/RatioTrackingShader"           //calculate emission and absorpti
                 return sampledColor;
             }
 
-            float4 BlendUnder(float4 color, float4 newColor)
+            float getDensity(float3 pos)
             {
-                color.rgb += (1.0 - color.a) * newColor.a * newColor.rgb;
-                color.a += (1.0 - color.a) * newColor.a;
-                return color;
+                //return density for a cube, where transmittance falls linearly from 1 to 0 on x axis
+                return -log(pos.x + 0.5);
             }
+
+            float _Majorant;
 
             void frag(v2f i, out float4 color : SV_Target)
             {
-                _Density = 1 / _Density;
+                //_Density = 1 / _Density;
 
-                //_light_pos = mul(unity_WorldToObject, float4(_light_pos, 1));
+                _Density = getDensity(float3(_Density-0.5,0,0));
 
                 //get starting position and direction of ray
 
                 float3 pos = i.hitPos;
                 float3 rd = normalize(pos - i.ro);
 
-                //float3 forward = UnityViewToObject(float3(1, 0, 0));
                 if(unity_OrthoParams.w)                                                             //if camera is orthographic, recalculate ray direction
                     rd = mul(unity_WorldToObject, float4(unity_CameraToWorld._m02_m12_m22, 0));
-
-                //rd = -rd;
-
-                //pos = i.ro + rd*0.1;
-
-                //add some randomness to prevent aliasing
-                //pos = pos - rd * _Stepsize*rand(pos,0.0);
 
                 color = float4(0, 0, 0, 0);
 
                 float surf_rad = 0.0;               //variable to calculate reduction in surface radiance
-                //float3 emit_rad = float3(0, 0, 0);  //variable to store emitted radiance
-                //float3 scatt_rad = float3(0, 0, 0); //variable to store in-scattered radiance
-
 
                 float hit_steps = 0;
                 
+                _Majorant = 10 + 90 * (pos.y + 0.5);
+
+                float total_steps = 0;      //cost counter
 
                 for (int i = 0; i < _MaxSteps; i++)
                 {
@@ -122,8 +122,9 @@ Shader "Project/RatioTrackingShader"           //calculate emission and absorpti
                     float3 cur_rd = rd;
                     for(int j = 0; j < 1000; j++)
                     {
+                        total_steps += 1.0;
 
-                        float random = -log(1-rand(cur_pos, sin(i+j + _Time.a))) * _Density;
+                        float random = -log(1 - randSin(pos, float3(_Time.a, i, j))) / _Majorant;
                     
                         float3 sample_pos = cur_pos + rd * random;
 
@@ -131,25 +132,28 @@ Shader "Project/RatioTrackingShader"           //calculate emission and absorpti
 
                         if (max(abs(sample_pos.x), max(abs(sample_pos.y), abs(sample_pos.z))) < 0.5f)
                         {
-                            float4 color_sample = sampleTexture(sample_pos);
-                            //float color_sample = 0.5-length(sample_pos); 
+                            float color_sample = getDensity(sample_pos);
+                            //float color_sample = _Density;
 
-                            //if (color_sample > 0)
-                            //    color_sample = 1;
-
-                            T *= 1 - color_sample.a;
+                            T *= 1 - color_sample / _Majorant;
 
                             cur_pos = sample_pos;
 
+                        }
+                        else
+                        {
+                            break;
                         }
 
                     }
                     surf_rad += T;
                 }
 
-                color = _VolumeColor;
-                //color.rgb = emit_rad / _MaxSteps;
-                color.a = 1-(surf_rad/_MaxSteps);
+                color.a = 1;
+
+                //color.r = total_steps / (_MaxSteps * 200);  //calculate cost
+
+                color.rgb = (surf_rad/_MaxSteps);
 
                 //apply the transmittance to the alpha channel
                 //color = _Color;

@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: RaymarchAbsorption
-  m_Shader: {fileID: 4800000, guid: 1a57057d96353fb41812b83c22119b0d, type: 3}
+  m_Name: RatioTrackingCube
+  m_Shader: {fileID: 4800000, guid: f6604f997c9d75e49a5e8ba1ea63495d, type: 3}
   m_ShaderKeywords: 
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
@@ -40,7 +40,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MainTex:
-        m_Texture: {fileID: 11700000, guid: fb764438b02afb04eab061fa47793260, type: 3}
+        m_Texture: {fileID: 11700000, guid: bac01efdb92cc5d44a837f244209c413, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MetallicGlossMap:
@@ -60,15 +60,16 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Floats:
-    - _Alpha: 1
+    - _Alpha: 0.2
     - _BumpScale: 1
     - _Cutoff: 0.5
-    - _Density: 1
+    - _Density: 0.1
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
     - _GlossMapScale: 1
     - _Glossiness: 0.5
     - _GlossyReflections: 1
+    - _Majorant: 10
     - _MaxSteps: 100
     - _Metallic: 0
     - _Mode: 0
@@ -78,11 +79,14 @@ Material:
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _StepSize: 0.01
-    - _Stepsize: 0.1
+    - _Stepsize: 0.01
     - _UVSec: 0
     - _ZWrite: 1
+    - _light_pow: 10
     m_Colors:
-    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _Color: {r: 0.10769224, g: 1, b: 0, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
+    - _LightColor: {r: 1, g: 1, b: 1, a: 1}
     - _MainTex: {r: 0.7016185, g: 0.33490568, b: 1, a: 1}
+    - _VolumeColor: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []

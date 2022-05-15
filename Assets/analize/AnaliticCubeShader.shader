@@ -1,4 +1,4 @@
-Shader "Project/HomogenShader"            //calculate tansmittance in a homogenous cube
+Shader "Project/AnaliticCubeShader"            //calculate tansmittance in a homogenous cube
 {
     Properties
     {
@@ -10,7 +10,7 @@ Shader "Project/HomogenShader"            //calculate tansmittance in a homogeno
         Tags { "RenderType" = "Transparent" "Queue" = "Transparent" }
         LOD 100
         Blend SrcAlpha OneMinusSrcAlpha
-        Cull Off
+        Cull Back
 
         Pass
         {
@@ -46,6 +46,11 @@ Shader "Project/HomogenShader"            //calculate tansmittance in a homogeno
                 return o;
             }
 
+            float getDensity(float3 pos)
+            {
+                //return density for a cube, where transmittance falls linearly from 1 to 0 on x axis
+                return -log(pos.x + 0.5);
+            }
             
 
             void frag(v2f i, out fixed4 color : SV_Target)
@@ -54,6 +59,9 @@ Shader "Project/HomogenShader"            //calculate tansmittance in a homogeno
 
                 float3 pos = i.hitPos;
                 float3 rd = normalize(i.ro - pos);
+
+                if (unity_OrthoParams.w)                                                             //if camera is orthographic, recalculate ray direction
+                    rd = -mul(unity_WorldToObject, float4(unity_CameraToWorld._m02_m12_m22, 0));
 
                 //calculate the distance the ray has travelled through the cube, assuming a 1,1,1 cube at pos 0,0,0
 
@@ -75,8 +83,12 @@ Shader "Project/HomogenShader"            //calculate tansmittance in a homogeno
                 float dist = min(distx,min(disty,distz));
 
                 //apply the transmittance to the alpha channel
-                color = _Color;
-                color.a = 1- exp(-dist * _Density);
+                //color = _Color;
+                color = float4(0, 0, 0, 1);
+
+                float density = getDensity(pos) * _Density;
+
+                color.rgb = exp(-dist * density);
 
             }
             ENDCG
